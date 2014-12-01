@@ -2,6 +2,7 @@
 import logging
 import logging.config
 
+import requests
 
 import irc3
 from irc3d import IrcServer
@@ -38,6 +39,12 @@ class FasPlugin:
         fas_password = bot.config['fas']['password']
         self.fas = AccountSystem(
             fas_url, username=fas_username, password=fas_password)
+
+        #self.log.info("Downloading package owners cache")
+        data = requests.get(
+            'https://admin.fedoraproject.org/pkgdb/api/bugzilla?format=json',
+            verify=True).json()
+        self.bugzacl = data['bugzillaAcls']
 
     @command
     def fas(self, mask, target, args):
@@ -131,6 +138,42 @@ class FasPlugin:
             approved = "None"
         msg = 'Approved Groups: %s' % approved
         self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
+
+    @command
+    def whoowns(self, mask, target, args):
+        """whoowns <package>
+
+        Return more information about the specified user
+
+            %%whoowns <package>...
+        """
+
+        package = args['<package>'][0]
+
+        try:
+            mainowner = self.bugzacl['Fedora'][package]['owner']
+        except KeyError:
+            msg = "No such package exists."
+            self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
+            return
+
+        others = []
+        for key in self.bugzacl:
+            if key == 'Fedora':
+                continue
+            try:
+                owner = self.bugzacl[key][package]['owner']
+                if owner == mainowner:
+                    continue
+            except KeyError:
+                continue
+            others.append("%s in %s" % (owner, key))
+
+        if others == []:
+            self.bot.privmsg(target, '%s: %s' % (mask.nick, mainowner))
+        else:
+            msg = "%s (%s)" % (mainowner, ', '.join(others))
+            self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
 
 
 def main():
