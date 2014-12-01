@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
+import logging
 import logging.config
+
+
+import irc3
+from irc3d import IrcServer
 from irc3.compat import asyncio
 from irc3.plugins.command import command
-import logging
-import irc3
-
-from irc3d import IrcServer
-
 
 from fedora.client import AppError
 from fedora.client import AuthError
