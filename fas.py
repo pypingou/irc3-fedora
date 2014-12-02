@@ -46,6 +46,42 @@ class FasPlugin:
             verify=True).json()
         self.bugzacl = data['bugzillaAcls']
 
+    @staticmethod
+    def _future_meetings(location):
+        if not location.endswith('@irc.freenode.net'):
+            location = '%s@irc.freenode.net' % location
+        meetings = Fedora._query_fedocal(location=location)
+        now = datetime.datetime.utcnow()
+
+        for meeting in meetings:
+            string = "%s %s" % (meeting['meeting_date'],
+                                meeting['meeting_time_start'])
+            dt = datetime.datetime.strptime(string, "%Y-%m-%d %H:%M:%S")
+
+            if now < dt:
+                yield dt, meeting
+
+    @staticmethod
+    def _meetings_for(calendar):
+        meetings = Fedora._query_fedocal(calendar=calendar)
+        now = datetime.datetime.utcnow()
+
+        for meeting in meetings:
+            string = "%s %s" % (meeting['meeting_date'],
+                                meeting['meeting_time_start'])
+            start = datetime.datetime.strptime(string, "%Y-%m-%d %H:%M:%S")
+            string = "%s %s" % (meeting['meeting_date_end'],
+                                meeting['meeting_time_stop'])
+            end = datetime.datetime.strptime(string, "%Y-%m-%d %H:%M:%S")
+
+            if now >= start and now <= end:
+                yield meeting
+
+    @staticmethod
+    def _query_fedocal(**kwargs):
+        url = 'https://apps.fedoraproject.org/calendar/api/meetings'
+        return requests.get(url, params=kwargs).json()['meetings']
+
     @command
     def admins(self, mask, target, args):
         """admins <group short name>
