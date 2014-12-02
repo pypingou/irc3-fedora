@@ -389,6 +389,41 @@ class FasPlugin:
         self.bot.privmsg(target, '%s: - %s' % (mask.nick, url))
 
     @command
+    def nextmeetings(self, mask, target, args):
+        """nextmeetings
+
+        Return the next meetings scheduled for any channel(s).
+
+            %%nextmeetings
+        """
+        msg = 'One moment, please...  Looking up the channel list.'
+        self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
+
+        url = 'https://apps.fedoraproject.org/calendar/api/locations/'
+        locations = requests.get(url).json()['locations']
+        meetings = sorted(chain(*[
+            self._future_meetings(location)
+            for location in locations
+            if 'irc.freenode.net' in location
+        ]), key=itemgetter(0))
+
+        test, meetings = tee(meetings)
+        try:
+            test.next()
+        except StopIteration:
+            response = "There are no meetings scheduled at all."
+            self.bot.privmsg(target, '%s: %s' % (mask.nick, response))
+            return
+
+        for date, meeting in islice(meetings, 0, 5):
+            response = "In #%s is %s (starting %s)" % (
+                meeting['meeting_location'].split('@')[0].strip(),
+                meeting['meeting_name'],
+                arrow.get(date).humanize(),
+            )
+            self.bot.privmsg(target, '%s: %s' % (mask.nick, response))
+
+    @command
     def whoowns(self, mask, target, args):
         """whoowns <package>
 
