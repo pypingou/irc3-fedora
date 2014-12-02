@@ -691,6 +691,25 @@ class FasPlugin:
         self.bot.privmsg(target, '%s: - %s' % (mask.nick, url))
 
     @command
+    def what(self, mask, target, args):
+        """what <package>
+
+        Returns a description of a given package.
+
+            %%what <package>
+        """
+        package = args['<package>'][0]
+        msg = None
+        try:
+            summary = self.bugzacl['Fedora'][package]['summary']
+            msg = "%s: %s" % (package, summary)
+        except KeyError:
+            msg = "No such package exists."
+
+        if msg is not None:
+            self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
+
+    @command
     def whoowns(self, mask, target, args):
         """whoowns <package>
 
