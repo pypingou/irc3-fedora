@@ -661,6 +661,36 @@ class FasPlugin:
             self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
 
     @command
+    def vacation(self, mask, target, args):
+        """vacation
+
+        Return the list of people who are on vacation right now according
+        to fedocal.
+
+            %%vacation
+        """
+
+        def get_persons():
+            for meeting in self._meetings_for('vacation'):
+                for manager in meeting['meeting_manager']:
+                    yield manager
+
+        persons = list(get_persons())
+
+        if not persons:
+            response = "Nobody is listed as being on vacation right now..."
+            self.bot.privmsg(target, '%s: %s' % (mask.nick, response))
+            url = "https://apps.fedoraproject.org/calendar/vacation/"
+            self.bot.privmsg(target, '%s: - %s' % (mask.nick, url))
+            return
+
+        persons = ", ".join(persons)
+        response = "The following people are on vacation: %s" % persons
+        self.bot.privmsg(target, '%s: %s' % (mask.nick, response))
+        url = "https://apps.fedoraproject.org/calendar/vacation/"
+        self.bot.privmsg(target, '%s: - %s' % (mask.nick, url))
+
+    @command
     def whoowns(self, mask, target, args):
         """whoowns <package>
 
