@@ -21,6 +21,35 @@ FAS = None
 PKGDB = PkgDB()
 
 
+class Utils(object):
+    """ Some handy utils for datagrepper visualization. """
+
+    @classmethod
+    def sparkline(cls, values):
+        bar = u'▁▂▃▄▅▆▇█'
+        barcount = len(bar) - 1
+        values = map(float, values)
+        mn, mx = min(values), max(values)
+        extent = mx - mn
+
+        if extent == 0:
+            indices = [0 for n in values]
+        else:
+            indices = [int((n - mn) / extent * barcount) for n in values]
+
+        unicode_sparkline = u''.join([bar[i] for i in indices])
+        return unicode_sparkline
+
+    @classmethod
+    def daterange(cls, start, stop, steps):
+        """ A generator for stepping through time. """
+        delta = (stop - start) / steps
+        current = start
+        while current + delta <= stop:
+            yield current, current + delta
+            current += delta
+
+
 @irc3.plugin
 class FasPlugin:
     """A plugin is a class which take the IrcBot as argument
@@ -451,6 +480,159 @@ class FasPlugin:
         response = "The following people are on push duty: %s" % persons
         self.bot.privmsg(target, '%s: %s' % (mask.nick, response))
         self.bot.privmsg(target, '%s: - %s' % (mask.nick, url))
+
+    @command
+    def quote(self, mask, target, args):
+        """quote <SYMBOL> [daily, weekly, monthly, quarterly]
+
+        Return some datagrepper statistics on fedmsg categories.
+
+            %%quote <symbol> <frame>
+        """
+
+        symbol = args['<symbol>'][0]
+        frame = 'daily'
+        if 'frame' in args:
+            frame = args['<frame>'][0]
+
+        # Second, build a lookup table for symbols.  By default, we'll use the
+        # fedmsg category names, take their first 3 characters and uppercase
+        # them.  That will take things like "wiki" and turn them into "WIK" and
+        # "bodhi" and turn them into "BOD".  This handles a lot for us.  We'll
+        # then override those that don't make sense manually here.  For
+        # instance "fedoratagger" by default would be "FED", but that's no
+        # good.  We want "TAG".
+        # Why all this trouble?  Well, as new things get added to the fedmsg
+        # bus, we don't want to have keep coming back here and modifying this
+        # code.  Hopefully this dance will at least partially future-proof us.
+        symbols = dict([
+            (processor.__name__.lower(), processor.__name__[:3].upper())
+            for processor in fedmsg.meta.processors
+        ])
+        symbols.update({
+            'fedoratagger': 'TAG',
+            'fedbadges': 'BDG',
+            'buildsys': 'KOJ',
+            'pkgdb': 'PKG',
+            'meetbot': 'MTB',
+            'planet': 'PLN',
+            'trac': 'TRC',
+            'mailman': 'MM3',
+        })
+
+        # Now invert the dict so we can lookup the argued symbol.
+        # Yes, this is vulnerable to collisions.
+        symbols = dict([(sym, name) for name, sym in symbols.items()])
+
+        # These aren't user-facing topics, so drop 'em.
+        del symbols['LOG']
+        del symbols['UNH']
+        del symbols['ANN']  # And this one is unused...
+
+        key_fmt = lambda d: ', '.join(sorted(d.keys()))
+
+        if symbol not in symbols:
+            response = "No such symbol %r.  Try one of %s"
+            msg = response % (symbol, key_fmt(symbols))
+            self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
+            return
+
+        # Now, build another lookup of our various timeframes.
+        frames = dict(
+            daily=datetime.timedelta(days=1),
+            weekly=datetime.timedelta(days=7),
+            monthly=datetime.timedelta(days=30),
+            quarterly=datetime.timedelta(days=91),
+        )
+
+        if frame not in frames:
+            response = "No such timeframe %r.  Try one of %s"
+            msg = response % (frame, key_fmt(frames))
+            self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
+            return
+
+        category = [symbols[symbol]]
+
+        t2 = datetime.datetime.utcnow()
+        t1 = t2 - frames[frame]
+        t0 = t1 - frames[frame]
+
+        # Count the number of messages between t0 and t1, and between t1 and t2
+        query1 = dict(start=t0, end=t1, category=category)
+        query2 = dict(start=t1, end=t2, category=category)
+
+        # Do this async for superfast datagrepper queries.
+        tpool = ThreadPool()
+        batched_values = tpool.map(datagrepper_query, [
+            dict(start=x, end=y, category=category)
+            for x, y in Utils.daterange(t1, t2, SPARKLINE_RESOLUTION)
+        ] + [query1, query2])
+
+        count2 = batched_values.pop()
+        count1 = batched_values.pop()
+
+        # Just rename the results.  We'll use the rest for the sparkline.
+        sparkline_values = batched_values
+
+        yester_phrases = dict(
+            daily="yesterday",
+            weekly="the week preceding this one",
+            monthly="the month preceding this one",
+            quarterly="the 3 months preceding these past three months",
+        )
+        phrases = dict(
+            daily="24 hours",
+            weekly="week",
+            monthly="month",
+            quarterly="3 months",
+        )
+
+        if count1 and count2:
+            percent = ((float(count2) / count1) - 1) * 100
+        elif not count1 and count2:
+            # If the older of the two time periods had zero messages, but there
+            # are some in the more current period.. well, that's an infinite
+            # percent increase.
+            percent = float('inf')
+        elif not count1 and not count2:
+            # If counts are zero for both periods, then the change is 0%.
+            percent = 0
+        else:
+            # Else, if there were some messages in the old time period, but
+            # none in the current... then that's a 100% drop off.
+            percent = -100
+
+        sign = lambda value: value >= 0 and '+' or '-'
+
+        template = u"{sym}, {name} {sign}{percent:.2f}% over {phrase}"
+        response = template.format(
+            sym=symbol,
+            name=symbols[symbol],
+            sign=sign(percent),
+            percent=abs(percent),
+            phrase=yester_phrases[frame],
+        )
+        self.bot.privmsg(target, '%s: %s' % (mask.nick, response))
+
+        # Now, make a graph out of it.
+        sparkline = Utils.sparkline(sparkline_values)
+
+        template = u"     {sparkline}  ⤆ over {phrase}"
+        response = template.format(
+            sym=symbol,
+            sparkline=sparkline,
+            phrase=phrases[frame]
+        )
+        self.bot.privmsg(target, '%s: %s' % (mask.nick, response))
+
+        to_utc = lambda t: time.gmtime(time.mktime(t.timetuple()))
+        # And a final line for "x-axis tics"
+        t1_fmt = time.strftime("%H:%M UTC %m/%d", to_utc(t1))
+        t2_fmt = time.strftime("%H:%M UTC %m/%d", to_utc(t2))
+        padding = u" " * (SPARKLINE_RESOLUTION - len(t1_fmt) - 3)
+        template = u"     ↑ {t1}{padding}↑ {t2}"
+        response = template.format(t1=t1_fmt, t2=t2_fmt, padding=padding)
+        self.bot.privmsg(target, '%s: %s' % (mask.nick, response))
 
     @command
     def whoowns(self, mask, target, args):
