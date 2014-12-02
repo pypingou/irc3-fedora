@@ -745,6 +745,30 @@ class FasPlugin:
             msg = "%s (%s)" % (mainowner, ', '.join(others))
             self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
 
+    @command
+    def wikilink(self, mask, target, args):
+        """wikilink <username>
+
+        Return MediaWiki link syntax for a FAS user's page on the wiki.
+
+            %%wikilink <username>...
+        """
+        name = args['<username>'][0]
+
+        person = msg = None
+        try:
+            person = self.fasclient.person_by_username(name)
+        except:
+            msg = 'Error getting info for user: "%s"' % name
+        if not person:
+            msg = 'User "%s" doesn\'t exist' % name
+        else:
+            msg = "[[User:%s|%s]]" % (person["username"],
+                                      person["human_name"] or '')
+
+        if msg is not None:
+            self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
+
 
 def main():
     # logging configuration
