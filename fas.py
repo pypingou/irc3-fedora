@@ -244,6 +244,29 @@ class FasPlugin:
             self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
 
     @command
+    def hellomynameis(self, mask, target, args):
+        """hellomynameis <username>
+
+        Return brief information about a Fedora Account System username. Useful
+        for things like meeting roll call and calling attention to yourself.
+
+            %%hellomynameis <username>
+        """
+        name = args['<username>'][0]
+        msg = None
+        try:
+            person = self.fasclient.person_by_username(name)
+        except:
+            msg = 'Something blew up, please try again'
+        if not person:
+            msg = 'Sorry, but you don\'t exist'
+        else:
+            msg = '%(username)s \'%(human_name)s\' <%(email)s>' % person
+
+        if msg is not None:
+            self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
+
+    @command
     def whoowns(self, mask, target, args):
         """whoowns <package>
 
