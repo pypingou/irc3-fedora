@@ -224,6 +224,26 @@ class FasPlugin:
         self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
 
     @command
+    def group(self, mask, target, args):
+        """group <group short name>
+
+        Return information about a Fedora Account System group.
+
+            %%group <group name>
+        """
+        name = args['<group name>'][0]
+
+        msg = None
+        try:
+            group = self.fasclient.group_by_name(name)
+            msg = '%s: %s' % (name, group['display_name'])
+        except AppError:
+            msg = 'There is no group "%s".' % name
+
+        if msg is not None:
+            self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
+
+    @command
     def whoowns(self, mask, target, args):
         """whoowns <package>
 
