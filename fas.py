@@ -289,6 +289,46 @@ class FasPlugin:
             self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
 
     @command
+    def localtime(self, mask, target, args):
+        """localtime <username>
+
+        Returns the current time of the user.
+        The timezone is queried from FAS.
+
+            %%localtime <username>
+        """
+        name = args['<username>'][0]
+
+        try:
+            person = self.fasclient.person_by_username(name)
+        except:
+            msg = 'Error getting info user user: "%s"' % name
+            self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
+            return
+
+        if not person:
+            msg = 'User "%s" doesn\'t exist' % name
+            self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
+            return
+
+        timezone_name = person['timezone']
+        if timezone_name is None:
+            msg = 'User "%s" doesn\'t share his timezone' % name
+            self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
+            return
+        try:
+            time = datetime.datetime.now(pytz.timezone(timezone_name))
+        except:
+            msg = 'The timezone of "%s" was unknown: "%s"' % (
+                name, timezone)
+            self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
+            return
+
+        msg = 'The current local time of "%s" is: "%s" (timezone: %s)' % (
+            name, time.strftime('%H:%M'), timezone_name)
+        self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
+
+    @command
     def whoowns(self, mask, target, args):
         """whoowns <package>
 
