@@ -424,6 +424,35 @@ class FasPlugin:
             self.bot.privmsg(target, '%s: %s' % (mask.nick, response))
 
     @command
+    def pushduty(self, mask, target, args):
+        """pushduty
+
+        Return the list of people who are on releng push duty right now.
+
+            %%pushduty
+        """
+
+        def get_persons():
+            for meeting in self._meetings_for('release-engineering'):
+                yield meeting['meeting_name']
+
+        persons = list(get_persons())
+
+        url = "https://apps.fedoraproject.org/" + \
+            "calendar/release-engineering/"
+
+        if not persons:
+            response = "Nobody is listed as being on push duty right now..."
+            self.bot.privmsg(target, '%s: %s' % (mask.nick, response))
+            self.bot.privmsg(target, '%s: - %s' % (mask.nick, url))
+            return
+
+        persons = ", ".join(persons)
+        response = "The following people are on push duty: %s" % persons
+        self.bot.privmsg(target, '%s: %s' % (mask.nick, response))
+        self.bot.privmsg(target, '%s: - %s' % (mask.nick, url))
+
+    @command
     def whoowns(self, mask, target, args):
         """whoowns <package>
 
