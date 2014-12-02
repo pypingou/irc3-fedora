@@ -329,6 +329,34 @@ class FasPlugin:
         self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
 
     @command
+    def members(self, mask, target, args):
+        """sponsors <group short name>
+
+        Return the list of members for the selected group
+
+            %%members <group name>...
+        """
+        name = args['<group name>'][0]
+
+        msg = None
+        try:
+            group = self.fasclient.group_members(name)
+            members = ''
+            for person in group:
+                if person['role_type'] == 'administrator':
+                    members += '@' + person['username'] + ' '
+                elif person['role_type'] == 'sponsor':
+                    members += '+' + person['username'] + ' '
+                else:
+                    members += person['username'] + ' '
+            msg = 'Members of %s: %s' % (name, members)
+        except AppError:
+            msg = 'There is no group %s.' % name
+
+        if msg is not None:
+            self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
+
+    @command
     def whoowns(self, mask, target, args):
         """whoowns <package>
 
