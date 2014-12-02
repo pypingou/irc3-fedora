@@ -107,6 +107,30 @@ class FasPlugin:
             self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
 
     @command
+    def branches(self, mask, target, args):
+        """branches <package>
+
+        Return the branches a package is in.
+
+            %%branches <package>...
+        """
+        package = args['<package>'][0]
+
+        try:
+            pkginfo = self.pkgdb.get_package(package)
+        except AppError:
+            msg = "No such package exists."
+            self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
+            return
+
+        branch_list = []
+        for listing in pkginfo['packages']:
+            branch_list.append(listing['collection']['branchname'])
+        branch_list.sort()
+        msg = ' '.join(branch_list)
+        self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
+
+    @command
     def fas(self, mask, target, args):
         """fas <pattern>
 
