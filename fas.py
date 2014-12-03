@@ -359,7 +359,7 @@ class FasPlugin:
 
     @command
     def members(self, mask, target, args):
-        """sponsors <group short name>
+        """members <group short name>
 
         Return the list of members for the selected group
 
