@@ -588,7 +588,7 @@ class FedoraPlugin:
 
         symbol = args['<symbol>']
         frame = 'daily'
-        if 'frame' in args:
+        if '<frame>' in args:
             frame = args['<frame>']
 
         # Second, build a lookup table for symbols.  By default, we'll use the
