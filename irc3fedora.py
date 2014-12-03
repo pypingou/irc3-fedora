@@ -3,6 +3,9 @@ import datetime
 import logging
 import logging.config
 
+from itertools import chain, islice, tee
+from operator import itemgetter
+
 import requests
 import pytz
 
