@@ -67,7 +67,7 @@ class FedoraPlugin:
         fas_url = bot.config['fas']['url']
         fas_username = bot.config['fas']['username']
         fas_password = bot.config['fas']['password']
-        self.fas = AccountSystem(
+        self.fasclient = AccountSystem(
             fas_url, username=fas_username, password=fas_password)
 
         #self.log.info("Downloading package owners cache")
@@ -190,7 +190,7 @@ class FedoraPlugin:
 
             %%fas <pattern>
         """
-        users = self.fas.people_query(
+        users = self.fasclient.people_query(
                 constraints={
                     #'username': args['<pattern>'],
                     'ircnick': args['<pattern>'],
@@ -219,7 +219,7 @@ class FedoraPlugin:
         name = args['<username>']
 
         try:
-            person = self.fas.person_by_username(name)
+            person = self.fasclient.person_by_username(name)
         except:
             msg = 'Error getting info for user: "%s"' % name
             self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
@@ -254,7 +254,7 @@ class FedoraPlugin:
         columns = ['username', 'group', 'role_type']
         roles = []
         try:
-            roles = self.fas.people_query(
+            roles = self.fasclient.people_query(
                 constraints=constraints,
                 columns=columns)
         except:
