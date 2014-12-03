@@ -116,13 +116,13 @@ class FedoraPlugin:
 
     @command
     def admins(self, mask, target, args):
-        """admins <group short name>
+        """admins <group name>
 
         Return the administrators list for the selected group
 
-            %%admins <group name>...
+            %%admins <group_name>
         """
-        name = args['<group name>'][0]
+        name = args['<group_name>']
 
         msg = None
         try:
@@ -283,9 +283,9 @@ class FedoraPlugin:
 
         Return information about a Fedora Account System group.
 
-            %%group <group name>
+            %%group <group_name>
         """
-        name = args['<group name>']
+        name = args['<group_name>']
 
         msg = None
         try:
@@ -388,9 +388,9 @@ class FedoraPlugin:
 
         Return the list of members for the selected group
 
-            %%members <group name>
+            %%members <group_name>
         """
-        name = args['<group name>']
+        name = args['<group_name>']
 
         msg = None
         try:
@@ -665,9 +665,9 @@ class FedoraPlugin:
 
         Return the sponsors list for the selected group
 
-            %%sponsors <group name>
+            %%sponsors <group_name>
         """
-        name = args['<group name>']
+        name = args['<group_name>']
 
         msg = None
         try:
