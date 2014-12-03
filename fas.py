@@ -136,6 +136,28 @@ class FasPlugin:
             self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
 
     @command
+    def badges(self, mask, target, args):
+        """badges <username>
+
+        Return badges statistics about a user.
+
+            %%badges <username>...
+        """
+        name = args['<username>'][0]
+
+        url = "https://badges.fedoraproject.org/user/" + name
+        d = requests.get(url + "/json").json()
+
+        if 'error' in d:
+            response = d['error']
+        else:
+            template = "{name} has unlocked {n} Fedora Badges:  {url}"
+            n = len(d['assertions'])
+            response = template.format(name=name, url=url, n=n)
+
+        self.bot.privmsg(target, '%s: %s' % (mask.nick, response))
+
+    @command
     def branches(self, mask, target, args):
         """branches <package>
 
