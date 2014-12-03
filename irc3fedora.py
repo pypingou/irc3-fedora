@@ -142,9 +142,9 @@ class FedoraPlugin:
 
         Return badges statistics about a user.
 
-            %%badges <username>...
+            %%badges <username>
         """
-        name = args['<username>'][0]
+        name = args['<username>']
 
         url = "https://badges.fedoraproject.org/user/" + name
         d = requests.get(url + "/json").json()
@@ -164,9 +164,9 @@ class FedoraPlugin:
 
         Return the branches a package is in.
 
-            %%branches <package>...
+            %%branches <package>
         """
-        package = args['<package>'][0]
+        package = args['<package>']
 
         try:
             pkginfo = self.pkgdb.get_package(package)
@@ -188,12 +188,12 @@ class FedoraPlugin:
 
         Searches a pattern in the list of FAS user
 
-            %%fas <pattern>...
+            %%fas <pattern>
         """
         users = self.fas.people_query(
                 constraints={
-                    #'username': args['<pattern>'][0],
-                    'ircnick': args['<pattern>'][0],
+                    #'username': args['<pattern>'],
+                    'ircnick': args['<pattern>'],
                 },
                 columns=['username', 'ircnick', 'email']
             )
@@ -214,9 +214,9 @@ class FedoraPlugin:
 
         Return more information about the specified user
 
-            %%fasinfo <username>...
+            %%fasinfo <username>
         """
-        name = args['<username>'][0]
+        name = args['<username>']
 
         try:
             person = self.fas.person_by_username(name)
@@ -283,7 +283,7 @@ class FedoraPlugin:
 
             %%group <group name>
         """
-        name = args['<group name>'][0]
+        name = args['<group name>']
 
         msg = None
         try:
@@ -304,7 +304,7 @@ class FedoraPlugin:
 
             %%hellomynameis <username>
         """
-        name = args['<username>'][0]
+        name = args['<username>']
         msg = None
         try:
             person = self.fasclient.person_by_username(name)
@@ -326,7 +326,7 @@ class FedoraPlugin:
 
             %%himynameis <username>
         """
-        name = args['<username>'][0]
+        name = args['<username>']
         msg = None
         try:
             person = self.fasclient.person_by_username(name)
@@ -349,7 +349,7 @@ class FedoraPlugin:
 
             %%localtime <username>
         """
-        name = args['<username>'][0]
+        name = args['<username>']
 
         try:
             person = self.fasclient.person_by_username(name)
@@ -386,9 +386,9 @@ class FedoraPlugin:
 
         Return the list of members for the selected group
 
-            %%members <group name>...
+            %%members <group name>
         """
-        name = args['<group name>'][0]
+        name = args['<group name>']
 
         msg = None
         try:
@@ -414,9 +414,9 @@ class FedoraPlugin:
 
         Return the next meeting scheduled for a particular channel.
 
-            %%nextmeeting <channel>...
+            %%nextmeeting <channel>
         """
-        channel = args['<channel>'][0]
+        channel = args['<channel>']
 
         channel = channel.strip('#').split('@')[0]
         meetings = sorted(self._future_meetings(channel), key=itemgetter(0))
@@ -513,10 +513,10 @@ class FedoraPlugin:
             %%quote <symbol> <frame>
         """
 
-        symbol = args['<symbol>'][0]
+        symbol = args['<symbol>']
         frame = 'daily'
         if 'frame' in args:
-            frame = args['<frame>'][0]
+            frame = args['<frame>']
 
         # Second, build a lookup table for symbols.  By default, we'll use the
         # fedmsg category names, take their first 3 characters and uppercase
@@ -663,9 +663,9 @@ class FedoraPlugin:
 
         Return the sponsors list for the selected group
 
-            %%sponsors <group name>...
+            %%sponsors <group name>
         """
-        name = args['<group name>'][0]
+        name = args['<group name>']
 
         msg = None
         try:
@@ -721,7 +721,7 @@ class FedoraPlugin:
 
             %%what <package>
         """
-        package = args['<package>'][0]
+        package = args['<package>']
         msg = None
         try:
             summary = self.bugzacl['Fedora'][package]['summary']
@@ -738,10 +738,10 @@ class FedoraPlugin:
 
         Return more information about the specified user
 
-            %%whoowns <package>...
+            %%whoowns <package>
         """
 
-        package = args['<package>'][0]
+        package = args['<package>']
 
         try:
             mainowner = self.bugzacl['Fedora'][package]['owner']
@@ -774,9 +774,9 @@ class FedoraPlugin:
 
         Return MediaWiki link syntax for a FAS user's page on the wiki.
 
-            %%wikilink <username>...
+            %%wikilink <username>
         """
-        name = args['<username>'][0]
+        name = args['<username>']
 
         person = msg = None
         try:
