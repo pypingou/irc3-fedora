@@ -85,7 +85,7 @@ class FedoraPlugin:
     def _future_meetings(location):
         if not location.endswith('@irc.freenode.net'):
             location = '%s@irc.freenode.net' % location
-        meetings = Fedora._query_fedocal(location=location)
+        meetings = FedoraPlugin._query_fedocal(location=location)
         now = datetime.datetime.utcnow()
 
         for meeting in meetings:
