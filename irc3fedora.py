@@ -2,15 +2,22 @@
 import datetime
 import logging
 import logging.config
+import threading
+import time
+import urllib
+import urllib2
 
 from itertools import chain, islice, tee
 from operator import itemgetter
 
 import arrow
-import requests
-import pytz
-
+import fedmsg.config
+import fedmsg.meta
 import irc3
+import pytz
+import requests
+import simplejson
+
 from irc3d import IrcServer
 from irc3.compat import asyncio
 from irc3.plugins.command import command
@@ -24,6 +31,10 @@ from pkgdb2client import PkgDB
 
 
 FAS = None
+
+# The variables, classes and methods below are used for the ``quote`` command
+SPARKLINE_RESOLUTION = 50
+datagrepper_url = 'https://apps.fedoraproject.org/datagrepper/raw'
 
 
 class Utils(object):
@@ -55,6 +66,58 @@ class Utils(object):
             current += delta
 
 
+class WorkerThread(threading.Thread):
+    """ A simple worker thread for our threadpool. """
+
+    def __init__(self, fn, item, *args, **kwargs):
+        self.fn = fn
+        self.item = item
+        super(WorkerThread, self).__init__(*args, **kwargs)
+
+    def run(self):
+        self.result = self.fn(self.item)
+
+
+class ThreadPool(object):
+    """ Our very own threadpool implementation.
+
+    We make our own thing because multiprocessing is too heavy.
+    """
+
+    def map(self, fn, items):
+        threads = []
+
+        for item in items:
+            threads.append(WorkerThread(fn=fn, item=item))
+
+        for thread in threads:
+            thread.start()
+
+        for thread in threads:
+            thread.join()
+
+        return [thread.result for thread in threads]
+
+
+def datagrepper_query(kwargs):
+    """ Return the count of msgs filtered by kwargs for a given time.
+
+    The arguments for this are a little clumsy; this is imposed on us by
+    multiprocessing.Pool.
+    """
+    start, end = kwargs.pop('start'), kwargs.pop('end')
+    params = {
+        'start': time.mktime(start.timetuple()),
+        'end': time.mktime(end.timetuple()),
+    }
+    params.update(kwargs)
+
+    req = requests.get(datagrepper_url, params=params)
+    json_out = simplejson.loads(req.text)
+    result = int(json_out['total'])
+    return result
+
+
 @irc3.plugin
 class FedoraPlugin:
     """A plugin is a class which take the IrcBot as argument
@@ -81,6 +144,10 @@ class FedoraPlugin:
         self.bugzacl = data['bugzillaAcls']
 
         self.pkgdb = PkgDB()
+
+        # Pull in /etc/fedmsg.d/ so we can build the fedmsg.meta processors.
+        fm_config = fedmsg.config.load_config()
+        fedmsg.meta.make_processors(**fm_config)
 
     @staticmethod
     def _future_meetings(location):
