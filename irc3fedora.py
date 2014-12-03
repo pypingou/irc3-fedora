@@ -372,7 +372,7 @@ class FedoraPlugin:
             time = datetime.datetime.now(pytz.timezone(timezone_name))
         except:
             msg = 'The timezone of "%s" was unknown: "%s"' % (
-                name, timezone)
+                name, timezone_name)
             self.bot.privmsg(target, '%s: %s' % (mask.nick, msg))
             return
 
