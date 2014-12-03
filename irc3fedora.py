@@ -20,7 +20,6 @@ from pkgdb2client import PkgDB
 
 
 FAS = None
-PKGDB = PkgDB()
 
 
 class Utils(object):
@@ -76,6 +75,8 @@ class FedoraPlugin:
             'https://admin.fedoraproject.org/pkgdb/api/bugzilla?format=json',
             verify=True).json()
         self.bugzacl = data['bugzillaAcls']
+
+        self.pkgdb = PkgDB()
 
     @staticmethod
     def _future_meetings(location):
