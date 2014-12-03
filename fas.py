@@ -51,7 +51,7 @@ class Utils(object):
 
 
 @irc3.plugin
-class FasPlugin:
+class FedoraPlugin:
     """A plugin is a class which take the IrcBot as argument
     """
 
@@ -92,7 +92,7 @@ class FasPlugin:
 
     @staticmethod
     def _meetings_for(calendar):
-        meetings = Fedora._query_fedocal(calendar=calendar)
+        meetings = FedoraPlugin._query_fedocal(calendar=calendar)
         now = datetime.datetime.utcnow()
 
         for meeting in meetings:
